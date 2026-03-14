@@ -1,126 +1,99 @@
 import { useState } from "react";
-import { Avatar, Popconfirm, message } from "antd";
+import { Avatar, Popconfirm, message, Tag } from "antd";
 import { UserOutlined } from "@ant-design/icons";
 import ReusableTable from "../../../shared/ResuableTable";
-// ─── Initial Data ──────────────────────────────────────────────────────────────
-const initialData = [
-  {
-    key: "1",
-    name: "Al-Amin",
-    email: "shimizuker@cybereas..",
-    extraEmails: "+20",
-    avatar: "https://randomuser.me/api/portraits/women/1.jpg",
-    location: "Portland, Illinois",
-    date: "November 28, 2015",
-  },
-  {
-    key: "2",
-    name: "Al-Amin",
-    email: "nathan.roberts@example.com",
-    avatar: "https://randomuser.me/api/portraits/men/2.jpg",
-    location: "Pasadena, Oklahoma",
-    date: "November 7, 2017",
-  },
-  {
-    key: "3",
-    name: "Al-Amin",
-    email: "debra.holt@example.com",
-    avatar: "https://randomuser.me/api/portraits/men/3.jpg",
-    location: "Corona, Michigan",
-    date: "February 9, 2015",
-  },
-  {
-    key: "4",
-    name: "Al-Amin",
-    email: "nevaeh.simmons@example.com",
-    avatar: "https://randomuser.me/api/portraits/women/4.jpg",
-    location: "Lafayette, California",
-    date: "September 9, 2013",
-  },
-  {
-    key: "5",
-    name: "Al-Amin",
-    email: "tanya.hill@example.com",
-    avatar: "https://randomuser.me/api/portraits/men/5.jpg",
-    location: "Great Falls, Maryland",
-    date: "March 6, 2018",
-  },
-  {
-    key: "6",
-    name: "Al-Amin",
-    email: "tim.jennings@example.com",
-    avatar: "https://randomuser.me/api/portraits/men/6.jpg",
-    location: "Stockton, New Hampshire",
-    date: "December 29, 2012",
-  },
-  {
-    key: "7",
-    name: "Al-Amin",
-    email: "jackson.graham@example.com",
-    avatar: "https://randomuser.me/api/portraits/women/7.jpg",
-    location: "Syracuse, Connecticut",
-    date: "October 31, 2017",
-  },
-];
+import {
+  useGetAllUsersQuery,
+  useToggleBlockUserMutation,
+} from "../../../redux/features/user/userApi";
 
-// ─── AllSurgent Component ──────────────────────────────────────────────────────
 const SargentManage = ({ onBack }) => {
-  const [data, setData] = useState(initialData);
-  const [messageApi, contextHolder] = message.useMessage();
+  const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const limit = 7;
 
-  const handleDecline = (record) => {
-    setData((prev) => prev.filter((item) => item.key !== record.key));
-    messageApi.warning(`${record.name} has been declined.`);
+  // GET /users/search?query=&page=&limit=
+  const { data: res, isLoading } = useGetAllUsersQuery({
+    page,
+    limit,
+    query: searchQuery,
+  });
+
+  // response shape অনুযায়ী adjust করুন
+  const users = res?.data?.users ?? res?.data ?? [];
+  const total = res?.data?.total ?? res?.total ?? 0;
+
+  // PATCH /users/togglee-block
+  const [toggleBlockUser, { isLoading: toggling }] =
+    useToggleBlockUserMutation();
+
+  const handleToggleBlock = async (record) => {
+    try {
+      await toggleBlockUser({ userId: record.id ?? record._id }).unwrap();
+      message.success(
+        `${record.full_name ?? record.name} has been ${
+          record.is_blocked ? "unblocked" : "blocked"
+        }.`,
+      );
+    } catch (err) {
+      message.error(err?.data?.message || "Action failed");
+    }
   };
 
   const columns = [
     {
-      title: "Surgent Name",
-      dataIndex: "name",
+      title: "Name",
       key: "name",
       render: (_, record) => (
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <Avatar
-            src={record.avatar}
+            src={
+              record.avatar
+                ? `${import.meta.env.VITE_BASE_IMAGE_URL}/${record.avatar.replace(/\\/g, "/")}`
+                : null
+            }
             icon={!record.avatar ? <UserOutlined /> : null}
             size={44}
-            style={{
-              flexShrink: 0,
-              border: "2px solid #f3f4f6",
-            }}
+            style={{ flexShrink: 0, border: "2px solid #f3f4f6" }}
           />
           <div>
             <div style={{ fontWeight: 700, color: "#1f2937", fontSize: 14 }}>
-              {record.name}
+              {record.full_name ?? record.name ?? "—"}
             </div>
             <div style={{ fontSize: 12, color: "#9ca3af", marginTop: 1 }}>
-              {record.email}
-              {record.extraEmails && (
-                <span
-                  style={{ color: "#f97316", fontWeight: 600, marginLeft: 4 }}
-                >
-                  {record.extraEmails}
-                </span>
-              )}
+              {record.email ?? "—"}
+            </div>
+            <div style={{ fontSize: 12, color: "#9ca3af" }}>
+              {record.phone ?? ""}
             </div>
           </div>
         </div>
       ),
     },
     {
-      title: "Location",
-      dataIndex: "location",
-      key: "location",
-      render: (val) => (
-        <span style={{ color: "#6b7280", fontSize: 14 }}>{val}</span>
-      ),
+      title: "Joined",
+      dataIndex: "createdAt",
+      key: "createdAt",
+      render: (val) =>
+        val ? (
+          <span style={{ color: "#6b7280", fontSize: 14 }}>
+            {new Date(val).toLocaleDateString("en-GB", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+            })}
+          </span>
+        ) : (
+          "—"
+        ),
     },
     {
-      title: "Date",
-      dataIndex: "date",
-      key: "date",
-      render: (val) => (
-        <span style={{ color: "#6b7280", fontSize: 14 }}>{val}</span>
+      title: "Status",
+      key: "status",
+      render: (_, record) => (
+        <Tag color={record.is_blocked ? "red" : "green"}>
+          {record.is_blocked ? "Blocked" : "Active"}
+        </Tag>
       ),
     },
     {
@@ -128,21 +101,25 @@ const SargentManage = ({ onBack }) => {
       key: "action",
       render: (_, record) => (
         <Popconfirm
-          title="Decline Surgent"
-          description={`Are you sure you want to decline ${record.name}?`}
-          onConfirm={() => handleDecline(record)}
-          okText="Yes, Decline"
+          title={record.is_blocked ? "Unblock User" : "Block User"}
+          description={`Are you sure you want to ${
+            record.is_blocked ? "unblock" : "block"
+          } ${record.full_name ?? record.name}?`}
+          onConfirm={() => handleToggleBlock(record)}
+          okText={record.is_blocked ? "Yes, Unblock" : "Yes, Block"}
           cancelText="Cancel"
           okButtonProps={{
-            danger: true,
+            danger: !record.is_blocked,
             style: { borderRadius: 6, fontWeight: 600 },
           }}
           cancelButtonProps={{ style: { borderRadius: 6 } }}
         >
           <button
             style={{
-              background: "rgba(239,68,68,0.12)",
-              color: "#dc2626",
+              background: record.is_blocked
+                ? "rgba(34,197,94,0.15)"
+                : "rgba(239,68,68,0.12)",
+              color: record.is_blocked ? "#16a34a" : "#dc2626",
               border: "none",
               borderRadius: 999,
               padding: "6px 20px",
@@ -151,14 +128,13 @@ const SargentManage = ({ onBack }) => {
               fontSize: 13,
             }}
           >
-            Declined
+            {record.is_blocked ? "Unblock" : "Block"}
           </button>
         </Popconfirm>
       ),
     },
   ];
 
-  // Header left: back arrow + title
   const headerLeft = (
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
       <button
@@ -183,36 +159,40 @@ const SargentManage = ({ onBack }) => {
         </svg>
       </button>
       <span style={{ fontSize: 17, fontWeight: 700, color: "#1f2937" }}>
-        All Surgent
+        All Users
       </span>
     </div>
   );
 
   return (
-    <>
-      {contextHolder}
-      <div
-        style={{
-          background: "#fff",
-          borderRadius: 16,
-          padding: "20px 24px",
-          boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+    <div
+      style={{
+        background: "#fff",
+        borderRadius: 16,
+        padding: "20px 24px",
+        boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+      }}
+    >
+      <ReusableTable
+        columns={columns}
+        data={users}
+        loading={isLoading || toggling}
+        showSearch
+        showPagination
+        pageSize={limit}
+        total={total}
+        currentPage={page}
+        onPageChange={(p) => setPage(p)}
+        onSearch={(val) => {
+          setSearchQuery(val);
+          setPage(1);
         }}
-      >
-        <ReusableTable
-          columns={columns}
-          data={data}
-          showSearch
-          showPagination
-          pageSize={7}
-          searchPlaceholder="Search here..."
-          searchKeys={["name", "email", "location", "date"]}
-          rowKey="key"
-          headerLeft={headerLeft}
-          headerRight={null}
-        />
-      </div>
-    </>
+        searchPlaceholder="Search here..."
+        searchKeys={["full_name", "email", "phone"]}
+        rowKey="id"
+        headerLeft={headerLeft}
+      />
+    </div>
   );
 };
 

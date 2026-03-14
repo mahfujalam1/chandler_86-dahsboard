@@ -47,7 +47,7 @@ const router = createBrowserRouter([
         element: <ProductsTable />,
       },
       {
-        path: "sargent-manage",
+        path: "user-manage",
         element: <SargentManage />,
       },
       {

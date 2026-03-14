@@ -1,41 +1,71 @@
 import { useState } from "react";
+import { message } from "antd";
 import ReusableTable from "../../../shared/ResuableTable";
 import { ordersColumns } from "../../table/manageOrder/tableColumn";
-import { ordersData } from "../../table/manageOrder/tableData";
+import {
+  useGetAllOrdersQuery,
+  useUpdateOrderStatusMutation,
+} from "../../../redux/features/order/orderApi";
 
-// ─── OrdersTable Component ─────────────────────────────────────────────────────
-const OrdersTable = ({ data = ordersData }) => {
+const OrdersTable = () => {
   const [activeTab, setActiveTab] = useState("all");
-  const [tableData, setTableData] = useState(data);
+  const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const limit = 6;
 
-  // ── Accept হলে status "accepted" তে update হবে ──
-  const handleAccept = (key) => {
-    setTableData((prev) =>
-      prev.map((row) =>
-        row.key === key ? { ...row, status: "accepted" } : row,
-      ),
-    );
+  const { data: res, isLoading } = useGetAllOrdersQuery({
+    page,
+    limit,
+    query: searchQuery,
+  });
+
+  const allOrders = res?.data?.orders ?? res?.data ?? [];
+  const total = res?.data?.total ?? res?.total ?? 0;
+  console.log(allOrders)
+
+  const [updateOrderStatus, { isLoading: updating }] =
+    useUpdateOrderStatusMutation();
+
+  const handleAccept = async (record) => {
+    try {
+      await updateOrderStatus({
+        id: record.id ?? record.key,
+        order_status: "confirmed",
+      }).unwrap();
+      message.success("Order confirmed!");
+    } catch (err) {
+      message.error(err?.data?.message || "Failed to confirm order");
+    }
   };
 
-  // ── Decline confirm হলে row delete হবে ──
-  const handleDecline = (key) => {
-    setTableData((prev) => prev.filter((row) => row.key !== key));
+  const handleDecline = async (record) => {
+    try {
+      await updateOrderStatus({
+        id: record.id ?? record.key,
+        order_status: "cancelled",
+      }).unwrap();
+      message.success("Order cancelled!");
+    } catch (err) {
+      message.error(err?.data?.message || "Failed to cancel order");
+    }
   };
 
-  // ── activeTab অনুযায়ী data filter ──
   const filteredData =
     activeTab === "new"
-      ? tableData.filter((row) => row.status === "pending")
-      : tableData;
+      ? allOrders.filter(
+          (row) => row.order_status === "pending" || row.status === "pending",
+        )
+      : allOrders;
 
-  // ── Columns তৈরি করা handler সহ ──
   const columns = ordersColumns(handleAccept, handleDecline);
 
   const headerLeft = (
     <div className="flex items-center gap-4">
-      {/* New Order Tab */}
       <button
-        onClick={() => setActiveTab("new")}
+        onClick={() => {
+          setActiveTab("new");
+          setPage(1);
+        }}
         className="flex items-center gap-2 text-sm font-medium"
         style={{
           color: activeTab === "new" ? "#f97316" : "#9ca3af",
@@ -57,9 +87,11 @@ const OrdersTable = ({ data = ordersData }) => {
         New Order
       </button>
 
-      {/* All Tab */}
       <button
-        onClick={() => setActiveTab("all")}
+        onClick={() => {
+          setActiveTab("all");
+          setPage(1);
+        }}
         className="flex items-center gap-2 text-sm font-medium"
         style={{
           color: activeTab === "all" ? "#374151" : "#9ca3af",
@@ -89,12 +121,21 @@ const OrdersTable = ({ data = ordersData }) => {
       <ReusableTable
         columns={columns}
         data={filteredData}
-        showSearch={true}
-        showPagination={true}
-        pageSize={7}
+        loading={isLoading || updating}
+        showSearch
+        showPagination
+        pageSize={limit}
+        total={total}
+        currentPage={page}
+        onPageChange={(p) => setPage(p)}
+        onSearch={(val) => {
+          // ← search handler
+          setSearchQuery(val);
+          setPage(1);
+        }}
         searchPlaceholder="Search here..."
-        searchKeys={["name", "email", "location", "date"]}
-        rowKey="key"
+        searchKeys={["shipping_address", "order_status", "payment_method"]}
+        rowKey="id"
         headerLeft={headerLeft}
       />
     </div>

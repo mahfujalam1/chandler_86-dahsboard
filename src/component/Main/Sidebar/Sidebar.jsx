@@ -37,8 +37,7 @@ export default function Sidebar() {
   const navItems = [
     { label: "Order Manage", path: "/", icon: ListOrdered },
     { label: "Products Manage", path: "/product-manage", icon: Package },
-    { label: "Sargent Manage", path: "/sargent-manage", icon: Stethoscope },
-    { label: "Surgery Manage", path: "/surgery-manage", icon: Syringe },
+    { label: "User Manage", path: "/user-manage", icon: Stethoscope },
   ];
 
   const settingsSubRoutes = [

@@ -1,18 +1,18 @@
-import { useGetDashboardStatusQuery } from "../../../redux/features/dashboard/dashboardApi";
+import { useGetAllOrdersQuery } from "../../../redux/features/order/orderApi";
+import { useGetAllUsersQuery } from "../../../redux/features/user/userApi";
 
-// src/components/Status.jsx
+
 export default function Status() {
-  const { data } = useGetDashboardStatusQuery();
-  const statsData = data?.data;
+  const { data: ordersRes } = useGetAllOrdersQuery({ page: 1, limit: 1 });
+  const { data: usersRes } = useGetAllUsersQuery({ page: 1, limit: 10000, query:'' });
+  console.log(usersRes)
+
+  const totalOrders = ordersRes?.data?.totalOrders ?? ordersRes?.total ?? 0;
+  const totalUsers = usersRes?.data?.total ?? usersRes?.total ?? 0;
 
   const stats = [
-    { label: "Total User", value: statsData?.totalPlayers || 0 },
-    { label: "Total Sargent", value: statsData?.totalCaoches || 0 },
-    {
-      label: "Total Products",
-      value: statsData?.totalEarnings || 0,
-    },
-    { label: "Total Category", value: statsData?.totalSessions || 0 },
+    { label: "Total Orders", value: totalOrders },
+    { label: "Total Users", value: totalUsers },
   ];
 
   const format = (s) =>

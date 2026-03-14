@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { EyeInvisibleOutlined, EyeTwoTone } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-// import { useLoginMutation } from "../../../redux/features/auth/authApi";
+import { useLoginMutation } from "../../../redux/features/auth/authApi";
 import { toast } from "sonner";
 
 const SignIn = () => {
@@ -9,7 +9,7 @@ const SignIn = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(false);
   const navigation = useNavigate();
-  // const [login, { isLoading }] = useLoginMutation();
+  const [login, { isLoading }] = useLoginMutation();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -20,17 +20,14 @@ const SignIn = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      localStorage.setItem("token", "flaskhdflkajsdlfh")
-      navigation("/");
-      
-      // const res = await login(formData);
-      // if (res?.data) {
-      //   toast.success(res?.data?.message);
-      //   localStorage.setItem("token", res?.data?.data?.token);
-      //   navigation("/");
-      // } else if (res?.error) {
-      //   toast.error(res?.error?.data?.message);
-      // }
+      const res = await login(formData);
+      if (res?.data) {
+        toast.success(res?.data?.message);
+        localStorage.setItem("token", res?.data?.data?.token);
+        navigation("/");
+      } else if (res?.error) {
+        toast.error(res?.error?.data?.message);
+      }
     } catch (error) {
       toast.error(error.message);
     }

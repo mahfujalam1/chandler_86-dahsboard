@@ -14,6 +14,7 @@ import { useGetMeQuery } from "../../../redux/features/auth/authApi";
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("editProfile");
   const { data, refetch } = useGetMeQuery();
+  console.log(data)
 
   // Edit Profile State
   const [name, setName] = useState("");
@@ -35,7 +36,7 @@ export default function ProfilePage() {
   // Set initial values when data loads
   useEffect(() => {
     if (data?.data) {
-      setName(data.data.fullName || "");
+      setName(data.data.full_name || "");
       setEmail(data.data.email || "");
       setContactNo(data.data.phone || "");
     }
@@ -73,8 +74,8 @@ export default function ProfilePage() {
     try {
       const formData = new FormData();
 
-      if (name !== data?.data?.fullName) {
-        formData.append("fullName", name);
+      if (name !== data?.data?.full_name) {
+        formData.append("full_name", name);
       }
       if (contactNo !== data?.data?.phone) {
         formData.append("phone", contactNo);
@@ -122,9 +123,9 @@ export default function ProfilePage() {
 
     try {
       const response = await changePassword({
-        currentPassword,
-        newPassword,
-        confirmPassword,
+        old_password:currentPassword,
+        new_password: newPassword,
+        confirm_password: confirmPassword,
       }).unwrap();
 
       if (response.success) {
@@ -251,7 +252,7 @@ export default function ProfilePage() {
           {/* Avatar with upload functionality */}
           <div className="relative">
             <Avatar size={100} src={currentAvatar}>
-              {data?.data?.fullName?.[0]?.toUpperCase()}
+              {data?.data?.full_name?.[0]?.toUpperCase()}
             </Avatar>
             <label
               htmlFor="avatar-upload"
@@ -269,7 +270,9 @@ export default function ProfilePage() {
             />
           </div>
 
-          <h2 className="mt-3 text-xl font-semibold">{data?.data?.fullName}</h2>
+          <h2 className="mt-3 text-xl font-semibold">
+            {data?.data?.full_name}
+          </h2>
           <p className="text-gray-500 text-sm">@{data?.data?.role}</p>
 
           {/* Tabs below image */}

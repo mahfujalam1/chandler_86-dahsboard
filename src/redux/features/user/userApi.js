@@ -11,8 +11,8 @@ const userApi = baseApi.injectEndpoints({
     }),
 
     getAllUsers: builder.query({
-      query: ({ role, limit }) => ({
-        url: `/users?limit=${limit}&role=${role}`,
+      query: ({ page, limit, query } = {}) => ({
+        url: `/users/search?query=${query}&page=${page}&limit=${limit}`,
         method: "GET",
       }),
       providesTags: [tagTypes.users],
@@ -26,6 +26,15 @@ const userApi = baseApi.injectEndpoints({
       }),
     }),
 
+    toggleBlockUser: builder.mutation({
+      query: ({ userId }) => ({
+        url: `/users/toggle-block`,
+        method: "PATCH",
+        body: { userId },
+      }),
+      invalidatesTags: [tagTypes.users],
+    }),
+
     updateUser: builder.mutation({
       query: (data) => ({
         url: "/users",
@@ -36,4 +45,4 @@ const userApi = baseApi.injectEndpoints({
   }),
 });
 
-export const { useUsersGrowthQuery, useGetAllUsersQuery, useChangePasswordMutation, useUpdateUserMutation } = userApi;
+export const { useGetAllUsersQuery, useChangePasswordMutation, useToggleBlockUserMutation, useUsersGrowthQuery, useUpdateUserMutation } = userApi;
